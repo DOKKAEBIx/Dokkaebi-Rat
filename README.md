@@ -1,6 +1,5 @@
 # Dokkaebi-Rat
 Personal cyber sec. project aka Dokkaebi Rat
-Certainly! Here's the cat ASCII art formatted properly for a readme.txt:
 
 ```
 ⠀ ／l、
