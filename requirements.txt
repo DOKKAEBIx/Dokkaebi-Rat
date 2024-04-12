@@ -1,0 +1,6 @@
+pyscreenshot==2.0
+pyaudio==0.2.11
+Pillow==9.0.1
+geopy==2.2.0
+opencv-python==4.5.5.62
+colorama==0.4.4
