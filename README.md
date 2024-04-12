@@ -1,9 +1,13 @@
 # Dokkaebi-Rat
 Personal cyber sec. project aka Dokkaebi Rat
+Certainly! Here's the cat ASCII art formatted properly for a readme.txt:
+
+```
 ⠀ ／l、
 （ﾟ､ ｡ ７
 ⠀ l、ﾞ ~ヽ
   じしf_, )ノ  
+```
 DOKKAEBI RAT - Remote Access Trojan
 
 1. Requirements:
