@@ -3,7 +3,8 @@ Personal cyber sec. project aka Dokkaebi Rat
 ⠀ ／l、
 （ﾟ､ ｡ ７
 ⠀ l、ﾞ ~ヽ
-  じしf_, )ノ  DOKKAEBI RAT - Remote Access Trojan
+  じしf_, )ノ  
+DOKKAEBI RAT - Remote Access Trojan
 
 1. Requirements:
     - Python 3.x installed on your system.
