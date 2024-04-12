@@ -1,6 +1,5 @@
 # Dokkaebi-Rat
 Personal cyber sec. project aka Dokkaebi Rat
-```
 ⠀ ／l、
 （ﾟ､ ｡ ７
 ⠀ l、ﾞ ~ヽ
@@ -39,5 +38,4 @@ Personal cyber sec. project aka Dokkaebi Rat
     - Keep the RAT script and any generated files secure to prevent unauthorized access.
 
 7. Contact:
-    For any questions or support, contact the developer at dokkaebi@example.com.
-```
+    For any questions or support, contact the developer at dokkaebi@fbi.ac
