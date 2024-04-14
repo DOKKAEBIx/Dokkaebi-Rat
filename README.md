@@ -16,10 +16,12 @@ Personal cyber sec. project aka Dokkaebi Rat
 ```
 DOKKAEBI RAT - Remote Access Trojan
 
+DOKKAEBI RAT - Remote Access Trojan
+
 1. Requirements:
     - Python 3.x installed on your system.
     - Required Python packages listed in requirements.txt.
-        Install them using: `pip install -r requirements.txt`
+        Install them using: pip install -r requirements.txt
 
 2. Setting up the RAT:
     a. Clone or download the DOKKAEBI RAT repository from GitHub.
@@ -29,12 +31,13 @@ DOKKAEBI RAT - Remote Access Trojan
     - You can customize the RAT by modifying the Python script (Dokkaebi.py).
     - Add or remove functions as needed.
     - Modify the HOST and PORT variables to specify the IP address and port for listening.
+    (If you're having trouble I put "Changeme" where you should change the host and port <3)
 
 4. Running the RAT:
     a. Open a terminal or command prompt.
     b. Navigate to the directory where the Python script is located.
     c. Run the script using the following command:
-        `python Dokkaebi.py`
+        python Dokkaebi.py
 
 5. Operating the RAT:
     - Once the RAT server is running, it will listen for incoming connections from clients.
@@ -49,5 +52,4 @@ DOKKAEBI RAT - Remote Access Trojan
     - Keep the RAT script and any generated files secure to prevent unauthorized access.
 
 7. Contact:
-    For any questions or support, contact the developer at dokkaebi@fbi.ac
-
+    For any questions or support, contact the developer at dokkaebi@example.com.
