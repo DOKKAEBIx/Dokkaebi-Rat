@@ -12,8 +12,8 @@ import threading
 import signal
 
 # Global variables
-HOST = '192.168.137.1'
-PORT = 1234
+HOST = 'Changeme'
+PORT = Changeme
 
 # Color codes
 COLOR_GREEN = '\033[92m'
