@@ -13,6 +13,7 @@ DOKKAEBI RAT - Remote Access Trojan
     - You can customize the RAT by modifying the Python script (Dokkaebi.py).
     - Add or remove functions as needed.
     - Modify the HOST and PORT variables to specify the IP address and port for listening.
+    (If you're having trouble I put "Changeme" where you should change the host and port <3)
 
 4. Running the RAT:
     a. Open a terminal or command prompt.
